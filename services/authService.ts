@@ -7,28 +7,32 @@ const EMAIL_DOMAIN = 'chemstep.app'; // Virtual domain for username mapping (Leg
 
 // Helper to construct a default user structure
 const createDefaultUser = (id: string, displayName: string, role: 'student' | 'admin' = 'student', email?: string): User => {
+  // --- DEV OVERRIDE: Force Admin for specific credentials ---
+  const isAdmin = role === 'admin' || displayName.toLowerCase() === 'admin' || email?.startsWith('admin@');
+  const finalRole = isAdmin ? 'admin' : 'student';
+
   return {
     id,
     username: displayName,
     email: email || `${displayName}@${EMAIL_DOMAIN}`,
-    role,
+    role: finalRole,
     stats: {
-      xp: role === 'admin' ? 9999 : 0,
+      xp: finalRole === 'admin' ? 9999 : 0,
       studyPlan: { days: [1, 2, 3, 4, 5], time: '19:00', xpTarget: 300 }, // Updated to 300 default
       weeklyProgress: { weeklyXP: 0, lastLoginDate: new Date().toISOString().split('T')[0], daysCompleted: [] },
-      elementsCollected: role === 'admin' ? ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne'] : [],
-      level: role === 'admin' ? 50 : 1
+      elementsCollected: finalRole === 'admin' ? ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne'] : [],
+      level: finalRole === 'admin' ? 50 : 1
     },
     avatarConfig: { 
       skinColor: '#C0Aede', 
-      hat: role === 'admin' ? 'crown' : 'wizard', 
+      hat: finalRole === 'admin' ? 'crown' : 'wizard', 
       face: 'happy', 
-      item: role === 'admin' ? 'wand' : 'book', 
-      profession: role === 'admin' ? 'scientist' : 'student', 
+      item: finalRole === 'admin' ? 'wand' : 'book', 
+      profession: finalRole === 'admin' ? 'scientist' : 'student', 
       pattern: 'none', 
       bgEffect: 'none' 
     },
-    levels: INITIAL_LEVELS.map(l => role === 'admin' ? { ...l, locked: false } : l),
+    levels: INITIAL_LEVELS.map(l => finalRole === 'admin' ? { ...l, locked: false } : l),
     mistakes: []
   };
 };
@@ -135,7 +139,9 @@ export const authService = {
 
       if (authData.user) {
         // 3. Manual Profile Creation
-        const newUser = createDefaultUser(authData.user.id, cleanUsername, 'student', cleanEmail);
+        // DEV OVERRIDE: If username is 'admin', create as admin
+        const initialRole = cleanUsername.toLowerCase() === 'admin' ? 'admin' : 'student';
+        const newUser = createDefaultUser(authData.user.id, cleanUsername, initialRole, cleanEmail);
         
         // Only attempt to insert profile if we have a session (RLS requires it)
         // NOTE: If "Confirm Email" is enabled in Supabase, session will be null here.
@@ -171,6 +177,14 @@ export const authService = {
   login: async (identifier: string, password: string): Promise<AuthResponse> => {
     const cleanIdentifier = identifier.trim();
 
+    // --- 🚀 DEV BACKDOOR: Instant Admin Login ---
+    // This allows you to skip Supabase registration/validation for testing
+    if (cleanIdentifier === 'admin' && password === 'password') {
+        console.log("⚡ DEV MODE: Using Backdoor Admin Login");
+        const devAdminUser = createDefaultUser('dev-admin-id', 'admin', 'admin', 'admin@chemstep.app');
+        return { success: true, user: devAdminUser };
+    }
+
     try {
       // 1. Sign In
       // Support both pure Email and Legacy Username (virtual email)
@@ -201,15 +215,25 @@ export const authService = {
           
         let user: User | null = null;
         
+        // Force Admin Check on Login
+        const isSpecialAdmin = email.startsWith('admin@') || (profileData?.username === 'admin');
+        const role = isSpecialAdmin ? 'admin' : (profileData?.role || 'student');
+
         if (profileData) {
             // Prioritize game_data if it exists, otherwise reconstruct from columns
             if (profileData.game_data) {
                 user = profileData.game_data as User;
                 user.id = authData.user.id;
                 user.email = profileData.email; 
+                user.role = role; // Apply override
+                
+                // If forced admin, ensure XP/Levels are correct
+                if (role === 'admin' && user.stats.xp < 9999) {
+                    user = createDefaultUser(authData.user.id, profileData.username, 'admin', profileData.email);
+                }
             } else {
                 // Fallback reconstruction
-                user = createDefaultUser(authData.user.id, profileData.username, profileData.role || 'student', profileData.email);
+                user = createDefaultUser(authData.user.id, profileData.username, role, profileData.email);
                 if (profileData.stats) user.stats = profileData.stats;
                 if (profileData.avatar_config) user.avatarConfig = profileData.avatar_config;
                 if (profileData.levels_progress) user.levels = profileData.levels_progress;
@@ -223,7 +247,10 @@ export const authService = {
             // Use metadata username if available, else split email
             const fallbackName = authData.user.user_metadata?.username || cleanIdentifier.split('@')[0];
             
-            user = createDefaultUser(authData.user.id, fallbackName, 'student', email);
+            // Force admin for repair too
+            const repairRole = (fallbackName === 'admin' || email.startsWith('admin@')) ? 'admin' : 'student';
+            
+            user = createDefaultUser(authData.user.id, fallbackName, repairRole, email);
             
             const { error: repairError } = await supabase.from('profiles').upsert(formatProfileForDB(user));
             
@@ -258,9 +285,20 @@ export const authService = {
                 .eq('id', session.user.id)
                 .maybeSingle(); 
                 
+            const email = session.user.email || '';
+            const isSpecialAdmin = email.startsWith('admin@') || (data?.username === 'admin');
+            const role = isSpecialAdmin ? 'admin' : (data?.role || 'student');
+
             if (data) {
-                if (data.game_data) return { ...data.game_data, id: session.user.id };
-                const u = createDefaultUser(session.user.id, data.username, data.role, data.email);
+                if (data.game_data) {
+                    const u = { ...data.game_data, id: session.user.id, role: role } as User;
+                    // Ensure Admin stats persist if role is forced
+                    if (role === 'admin' && u.stats.xp < 9999) {
+                         return createDefaultUser(session.user.id, data.username, 'admin', email);
+                    }
+                    return u;
+                }
+                const u = createDefaultUser(session.user.id, data.username, role, data.email);
                 if (data.stats) u.stats = data.stats;
                 if (data.avatar_config) u.avatarConfig = data.avatar_config;
                 if (data.levels_progress) u.levels = data.levels_progress;
@@ -268,17 +306,17 @@ export const authService = {
                 return u;
             } else {
                 // If we have a session (e.g. from previously logged in Google/Email) but NO profile in DB, create one now.
-                // This handles cases where auth exists but profile was deleted or failed to create.
                 console.log("Session detected but no profile found: Creating new profile...");
                 
-                const emailName = session.user.email?.split('@')[0];
+                const emailName = email.split('@')[0];
                 const displayName = emailName || 'Student';
+                const newRole = (displayName === 'admin' || email.startsWith('admin@')) ? 'admin' : 'student';
                 
                 const newUser = createDefaultUser(
                     session.user.id, 
                     displayName, 
-                    'student', 
-                    session.user.email
+                    newRole, 
+                    email
                 );
 
                 // Insert into DB
@@ -297,7 +335,9 @@ export const authService = {
   },
 
   saveProgress: async (user: User) => {
-    if (user.id.startsWith('demo-')) return;
+    // Skip saving for the DEV BACKDOOR user to avoid polluting DB or errors
+    if (user.id === 'dev-admin-id' || user.id.startsWith('demo-')) return;
+    
     const { error } = await supabase.from('profiles').upsert(formatProfileForDB(user));
     if (error) {
         console.error("Save Progress Error:", error.message);

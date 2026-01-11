@@ -21,4 +21,20 @@ export const MOCK_FRIENDS = [
   { id: 'f5', name: 'Annie', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Annie', weeklyXP: 450, xp: 450, tierId: 't2' },
 ];
 
-export const MOCK_POSTS: SocialPost[] = [];
+export const MOCK_POSTS: SocialPost[] = [
+  {
+    id: 'admin-001',
+    author: 'ChemStep Official',
+    avatar: 'https://api.dicebear.com/9.x/adventurer/svg?seed=OctoMascot&backgroundColor=b6e3f4',
+    type: 'share',
+    status: 'approved',
+    content: '🎉 欢迎来到 ChemStep 化学圈子！\n\n在这里，你可以：\n📝 分享你的学习笔记\n🤔 提出遇到的化学难题\n✨ 展示你的元素收藏\n\n🎁 **新人福利**：\n只要 **点赞 + 留言** 本条动态，Octo 就会为你送上一份神秘的 **【限定头像特效】**！(系统将自动发放)\n\n快来试试吧！👇',
+    image: undefined,
+    likes: 1208,
+    isLiked: false,
+    timestamp: '置顶',
+    comments: [], // No fake comments as requested
+    xpReward: 0,
+    solved: false
+  }
+];
