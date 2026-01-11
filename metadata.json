@@ -1,0 +1,7 @@
+{
+  "name": "Final ChemStep - UEC Chemistry Better Version",
+  "description": "A gamified, creamy-style learning platform for UEC Chemistry students featuring AI tutoring.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
