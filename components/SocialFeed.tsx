@@ -3,7 +3,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { motion as m, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Send, Plus, HelpCircle, User, Zap, Image as ImageIcon, X, ShieldCheck, Check, Ban, Clock, AlertCircle, Sparkles, UserPlus, UserCheck } from 'lucide-react';
 import { SocialPost, Comment, AvatarConfig } from '../types';
-import { MOCK_POSTS } from '../constants';
+import { MOCK_POSTS, TIER_SYSTEM, MOCK_LEAGUE_USERS } from '../constants';
 import { OctoAvatar } from './OctoAvatar';
 
 const motion = m as any;
@@ -47,6 +47,14 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
   }, [posts, activeTab, isAdmin, effectiveUserName]);
 
   const pendingCount = useMemo(() => posts.filter(p => p.status === 'pending').length, [posts]);
+
+  // Helper to get Tier Name for a user
+  const getUserTier = (authorId?: string) => {
+      if (!authorId) return null;
+      const user = MOCK_LEAGUE_USERS.find(u => u.id === authorId);
+      if (!user) return null;
+      return TIER_SYSTEM.find(t => t.id === user.tierId);
+  };
 
   // --- REWARD CHECKER ---
   const checkAndTriggerReward = (postId: string, isLikeAction: boolean = false, isCommentAction: boolean = false) => {
@@ -301,6 +309,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
           {displayedPosts.map((post) => {
             const isFollowing = post.authorId && following.includes(post.authorId);
             const isMe = post.author === effectiveUserName;
+            const authorTier = getUserTier(post.authorId); // Get tier info
 
             return (
             <motion.div
@@ -318,6 +327,14 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
                    <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-bold text-slate-700 text-sm flex items-center gap-2">
                             {post.author}
+                            
+                            {/* NEW: Tier Badge */}
+                            {authorTier && (
+                                <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded border flex items-center gap-0.5 opacity-80 ${authorTier.color} border-current bg-white`}>
+                                    <span className="text-[10px]">{authorTier.icon}</span> {authorTier.name}
+                                </span>
+                            )}
+
                             {post.status === 'pending' && (
                                 <span className="bg-orange-100 text-orange-600 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
                                     <Clock size={10} /> 审核中
