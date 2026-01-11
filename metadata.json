@@ -1,5 +1,5 @@
 {
-  "name": "Final ChemStep - UEC Chemistry Better Version",
+  "name": "Chemstep - learn chemistry in little steps!",
   "description": "A gamified, creamy-style learning platform for UEC Chemistry students featuring AI tutoring.",
   "requestFramePermissions": [
     "microphone"

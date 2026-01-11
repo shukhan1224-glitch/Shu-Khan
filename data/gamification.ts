@@ -21,48 +21,4 @@ export const MOCK_FRIENDS = [
   { id: 'f5', name: 'Annie', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Annie', weeklyXP: 450, xp: 450, tierId: 't2' },
 ];
 
-export const MOCK_POSTS: SocialPost[] = [
-  {
-    id: 'p1',
-    author: '化学小达人',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-    type: 'question',
-    status: 'approved',
-    content: '求助！为什么浓硫酸稀释的时候不能把水倒进酸里？🧪',
-    likes: 12,
-    isLiked: false,
-    timestamp: '10分钟前',
-    xpReward: 50,
-    solved: false,
-    comments: [
-       { id: 'c1', author: 'Dr. Zinc', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zinc', content: '因为浓硫酸溶解会放出大量的热！如果水倒进酸里，水会沸腾飞溅伤人。', timestamp: '5分钟前', isCorrectAnswer: true }
-    ]
-  },
-  {
-    id: 'p2',
-    author: '没头脑',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Annie',
-    type: 'share',
-    status: 'approved',
-    content: '今天终于把元素周期表背下来了！开心！🎉',
-    image: 'https://picsum.photos/id/20/400/300',
-    likes: 45,
-    isLiked: true,
-    timestamp: '1小时前',
-    comments: []
-  },
-  {
-    id: 'p3',
-    author: '不高兴',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob',
-    type: 'question',
-    status: 'approved',
-    content: '这道有机题好难啊，乙醇氧化到底生成乙醛还是乙酸？🤔',
-    likes: 5,
-    isLiked: false,
-    timestamp: '2小时前',
-    xpReward: 30,
-    solved: false,
-    comments: []
-  }
-];
+export const MOCK_POSTS: SocialPost[] = [];
