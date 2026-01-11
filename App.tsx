@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion as m } from 'framer-motion';
 import { View, Level, UserStats, Mistake, Question, AvatarConfig, User, StudyPlan, ElementDetail } from './types';
 import { INITIAL_LEVELS, ALL_ELEMENT_SYMBOLS, ELEMENT_DETAILS } from './constants';
@@ -16,10 +16,14 @@ import { ElementDropModal } from './components/ElementDropModal'; // New Import
 import { authService } from './services/authService';
 import { fetchQuestionsForLevel } from './services/questionService';
 import { isSupabaseLive } from './services/supabaseClient';
-import { Cloud, CloudCheck, CloudOff, Loader2 } from 'lucide-react';
+import { Cloud, CloudCheck, CloudOff, Loader2, LogOut } from 'lucide-react';
 import { Mascot } from './components/Mascot';
 
 const motion = m as any;
+
+// --- CONFIGURATION ---
+// Auto-logout time in milliseconds (e.g., 30 minutes = 30 * 60 * 1000)
+const INACTIVITY_LIMIT = 30 * 60 * 1000; 
 
 const PotionBackground = () => (
   <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-gradient-to-b from-cream-100 to-magic-light/20">
@@ -63,6 +67,7 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoadingLevel, setIsLoadingLevel] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showAutoLogoutMsg, setShowAutoLogoutMsg] = useState(false);
 
   // New state for element drop
   const [newlyFoundElement, setNewlyFoundElement] = useState<ElementDetail | null>(null);
@@ -76,6 +81,9 @@ const App: React.FC = () => {
   const [userStats, setUserStats] = useState<UserStats>(DEFAULT_STATS);
   const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(DEFAULT_AVATAR);
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
+
+  // Timer Ref for Inactivity
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 初始化
   useEffect(() => {
@@ -145,18 +153,56 @@ const App: React.FC = () => {
     }
   }, [userStats, avatarConfig, levels, mistakes]);
 
-  const handleLogin = (user: User) => {
-    loadUserData(user, true);
-  };
-
-  const handleLogout = async () => {
+  // --- AUTO LOGOUT LOGIC ---
+  const handleLogout = async (isAuto: boolean = false) => {
     await authService.logout();
+    
+    // Clear timer
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+
     setCurrentUser(null);
     setUserStats(DEFAULT_STATS);
     setAvatarConfig(DEFAULT_AVATAR);
     setLevels(INITIAL_LEVELS);
     setMistakes([]);
     setShowWelcome(false);
+    
+    if (isAuto) {
+        setShowAutoLogoutMsg(true);
+        setTimeout(() => setShowAutoLogoutMsg(false), 4000);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const resetTimer = () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = setTimeout(() => {
+        console.log("User inactive for too long, logging out...");
+        handleLogout(true);
+      }, INACTIVITY_LIMIT);
+    };
+
+    // Events to track activity
+    const events = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
+    
+    // Add listeners
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    
+    // Initialize timer
+    resetTimer();
+
+    // Cleanup
+    return () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [currentUser]);
+
+
+  const handleLogin = (user: User) => {
+    loadUserData(user, true);
   };
 
   const handleLevelClick = async (level: Level, phaseIndex: number = 0) => {
@@ -269,6 +315,27 @@ const App: React.FC = () => {
     </div>
   );
 
+  // Auto Logout Toast Notification
+  if (!currentUser && showAutoLogoutMsg) {
+      return (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center text-center max-w-xs animate-bounce-slow">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                      <LogOut size={32} />
+                  </div>
+                  <h3 className="font-black text-xl text-slate-800 mb-2">已安全登出</h3>
+                  <p className="text-slate-500 text-sm mb-4">由于长时间未操作，Octo 帮您暂时关闭了实验室以确保安全。</p>
+                  <button 
+                    onClick={() => setShowAutoLogoutMsg(false)}
+                    className="bg-magic text-white px-6 py-2 rounded-xl font-bold hover:bg-magic-dark transition-colors"
+                  >
+                    重新登录
+                  </button>
+              </div>
+          </div>
+      );
+  }
+
   if (!currentUser) return <AuthScreen onLogin={handleLogin} />;
 
   const isAdmin = currentUser.role === 'admin';
@@ -329,7 +396,7 @@ const App: React.FC = () => {
         {currentView === View.MISTAKE_BOOK && <MistakeBook mistakes={mistakes} onRemoveMistake={id => setMistakes(m => m.filter(x => x.id !== id))} />}
         {currentView === View.COMMUNITY && <Community onBack={() => setCurrentView(View.MAP)} userAvatarConfig={avatarConfig} />}
         {currentView === View.SOCIAL && <SocialFeed onEarnXP={amt => setUserStats(s => ({...s, xp: s.xp + amt}))} currentUserAvatarConfig={avatarConfig} currentUserName={currentUser.username} isAdmin={isAdmin} />}
-        {currentView === View.PROFILE && <Profile stats={userStats} avatarConfig={avatarConfig} onUpdateAvatar={setAvatarConfig} onLogout={handleLogout} onUpdatePlan={p => setUserStats(s => ({...s, studyPlan: p}))} userEmail={currentUser.email} />}
+        {currentView === View.PROFILE && <Profile stats={userStats} avatarConfig={avatarConfig} onUpdateAvatar={setAvatarConfig} onLogout={() => handleLogout(false)} onUpdatePlan={p => setUserStats(s => ({...s, studyPlan: p}))} userEmail={currentUser.email} />}
       </main>
 
       {isLoadingLevel && (
