@@ -395,7 +395,17 @@ const App: React.FC = () => {
         {currentView === View.MAP && <LearningMap levels={levels} onLevelClick={handleLevelClick} isAdmin={isAdmin} />}
         {currentView === View.MISTAKE_BOOK && <MistakeBook mistakes={mistakes} onRemoveMistake={id => setMistakes(m => m.filter(x => x.id !== id))} />}
         {currentView === View.COMMUNITY && <Community onBack={() => setCurrentView(View.MAP)} userAvatarConfig={avatarConfig} />}
-        {currentView === View.SOCIAL && <SocialFeed onEarnXP={amt => setUserStats(s => ({...s, xp: s.xp + amt}))} currentUserAvatarConfig={avatarConfig} currentUserName={currentUser.username} isAdmin={isAdmin} />}
+        {currentView === View.SOCIAL && (
+            <SocialFeed 
+               onEarnXP={amt => setUserStats(s => ({...s, xp: s.xp + amt}))} 
+               currentUserAvatarConfig={avatarConfig} 
+               currentUserName={currentUser.username} 
+               isAdmin={isAdmin} 
+               onUnlockAvatar={(newConfig) => {
+                  setAvatarConfig(prev => ({ ...prev, ...newConfig }));
+               }}
+            />
+        )}
         {currentView === View.PROFILE && <Profile stats={userStats} avatarConfig={avatarConfig} onUpdateAvatar={setAvatarConfig} onLogout={() => handleLogout(false)} onUpdatePlan={p => setUserStats(s => ({...s, studyPlan: p}))} userEmail={currentUser.email} />}
       </main>
 

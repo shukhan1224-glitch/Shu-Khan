@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useMemo } from 'react';
 import { motion as m, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Send, Plus, HelpCircle, User, Zap, Image as ImageIcon, X, ShieldCheck, Check, Ban, Clock, AlertCircle } from 'lucide-react';
+import { Heart, MessageCircle, Send, Plus, HelpCircle, User, Zap, Image as ImageIcon, X, ShieldCheck, Check, Ban, Clock, AlertCircle, Sparkles } from 'lucide-react';
 import { SocialPost, Comment, AvatarConfig } from '../types';
 import { MOCK_POSTS } from '../constants';
 import { OctoAvatar } from './OctoAvatar';
@@ -12,20 +13,26 @@ interface SocialFeedProps {
   currentUserAvatarConfig: AvatarConfig;
   currentUserName: string;
   isAdmin?: boolean;
+  onUnlockAvatar?: (config: Partial<AvatarConfig>) => void; // New prop for unlocking rewards
 }
 
 type Tab = 'explore' | 'moderation';
 
-export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAvatarConfig, currentUserName, isAdmin }) => {
+export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAvatarConfig, currentUserName, isAdmin, onUnlockAvatar }) => {
   const [activeTab, setActiveTab] = useState<Tab>('explore');
   const [posts, setPosts] = useState<SocialPost[]>(MOCK_POSTS);
   const [newPostContent, setNewPostContent] = useState('');
   const [isAskingQuestion, setIsAskingQuestion] = useState(false);
   const [commentInput, setCommentInput] = useState<{ [postId: string]: string }>({});
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const [showRewardToast, setShowRewardToast] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // --- IDENTITY LOGIC ---
+  // If admin, display as "ChemStep Official"
+  const effectiveUserName = isAdmin ? 'ChemStep Official' : currentUserName;
 
   const displayedPosts = useMemo(() => {
     if (isAdmin && activeTab === 'moderation') {
@@ -33,11 +40,42 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
     }
     return posts.filter(p => 
       p.status === 'approved' || 
-      (p.status === 'pending' && p.author === currentUserName)
+      (p.status === 'pending' && p.author === effectiveUserName)
     );
-  }, [posts, activeTab, isAdmin, currentUserName]);
+  }, [posts, activeTab, isAdmin, effectiveUserName]);
 
   const pendingCount = useMemo(() => posts.filter(p => p.status === 'pending').length, [posts]);
+
+  // --- REWARD CHECKER ---
+  const checkAndTriggerReward = (postId: string, isLikeAction: boolean = false, isCommentAction: boolean = false) => {
+      // 1. Must be the specific pinned post (ID: admin-001)
+      if (postId !== 'admin-001') return;
+
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      // 2. Check conditions (Current State + New Action)
+      const hasLiked = isLikeAction ? !post.isLiked : post.isLiked; // Toggle logic prediction or current state if comment
+      
+      // Check if user has ALREADY commented or is JUST commenting
+      const hasCommentedAlready = post.comments.some(c => c.author === effectiveUserName);
+      const isCommentingNow = isCommentAction;
+      const hasCommented = hasCommentedAlready || isCommentingNow;
+
+      // 3. If both true, trigger reward
+      const finalLikedState = isLikeAction ? !post.isLiked : post.isLiked;
+
+      if (finalLikedState && hasCommented && onUnlockAvatar) {
+          // Avoid spamming if user toggles? 
+          // We can just re-apply it, it's idempotent.
+          onUnlockAvatar({ bgEffect: 'stars', pattern: 'sparkles' });
+          
+          setShowRewardToast(true);
+          setTimeout(() => {
+              setShowRewardToast(false);
+          }, 5000);
+      }
+  };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,10 +93,10 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
 
     const newPost: SocialPost = {
       id: Date.now().toString(),
-      author: currentUserName,
-      avatar: 'custom-octo', // Special flag to render dynamic avatar
+      author: effectiveUserName, // Use effective name
+      avatar: 'custom-octo', 
       type: isAskingQuestion ? 'question' : 'share',
-      status: 'pending',
+      status: isAdmin ? 'approved' : 'pending', // Admins auto-approve
       content: newPostContent,
       image: selectedImage || undefined,
       likes: 0,
@@ -76,12 +114,12 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
     
     if (!isAdmin) {
       alert('帖子已提交！管理员审核通过后将对所有人可见。');
-    } else {
-      alert('帖子已创建');
     }
   };
 
   const toggleLike = (postId: string) => {
+    checkAndTriggerReward(postId, true, false); // Check reward before state update logic applied visually
+
     setPosts(posts.map(post => {
       if (post.id === postId) {
         return {
@@ -98,6 +136,8 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
     const text = commentInput[postId];
     if (!text?.trim()) return;
 
+    checkAndTriggerReward(postId, false, true); // Check reward
+
     const post = posts.find(p => p.id === postId);
     
     if (post?.type === 'question' && !post.solved) {
@@ -106,7 +146,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
 
     const newComment: Comment = {
       id: Date.now().toString(),
-      author: currentUserName,
+      author: effectiveUserName, // Use effective name
       avatar: 'custom-octo',
       content: text,
       timestamp: '刚刚'
@@ -378,6 +418,37 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
 
             </motion.div>
           ))}
+        </AnimatePresence>
+
+        {/* Reward Toast Notification */}
+        <AnimatePresence>
+            {showRewardToast && (
+                <motion.div 
+                   initial={{ opacity: 0, y: 50, scale: 0.8 }}
+                   animate={{ opacity: 1, y: 0, scale: 1 }}
+                   exit={{ opacity: 0, y: 20, scale: 0.8 }}
+                   className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[100] w-[90%] max-w-sm"
+                >
+                   <div className="bg-slate-800 text-white p-4 rounded-2xl shadow-2xl border-2 border-yellow-400 flex items-center gap-4 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-600/50 to-blue-600/50 animate-pulse" />
+                      
+                      <div className="relative z-10 bg-white p-2 rounded-full text-yellow-500 shadow-md">
+                         <Sparkles size={24} fill="currentColor" />
+                      </div>
+                      
+                      <div className="relative z-10 flex-1">
+                         <h3 className="font-bold text-lg text-yellow-400 mb-0.5 drop-shadow-md">任务完成!</h3>
+                         <p className="text-xs text-slate-200 leading-tight">
+                            限定头像特效 <span className="font-bold text-white">【星空背景 + 闪光纹理】</span> 已解锁并自动佩戴！
+                         </p>
+                      </div>
+                      
+                      <button onClick={() => setShowRewardToast(false)} className="relative z-10 p-1 text-slate-400 hover:text-white transition-colors">
+                         <X size={16} />
+                      </button>
+                   </div>
+                </motion.div>
+            )}
         </AnimatePresence>
       </div>
     </div>

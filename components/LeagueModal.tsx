@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { motion as m, AnimatePresence } from 'framer-motion';
 import { X, ChevronUp, ChevronDown, Lock, Crown, Timer, Users, User, Medal } from 'lucide-react';
-import { TIER_SYSTEM, MOCK_FRIENDS } from '../constants';
+import { TIER_SYSTEM } from '../constants';
 
 const motion = m as any;
 
@@ -25,9 +26,8 @@ export const LeagueModal: React.FC<LeagueModalProps> = ({ currentXP, onClose }) 
       ? Math.min(100, Math.max(0, ((currentXP - currentTier.minXP) / (nextTier.minXP - currentTier.minXP)) * 100))
       : 100;
 
-  // Build Leaderboard Data with Total XP
+  // Build Leaderboard Data with Total XP - Only Current User for now (No Mock Data)
   const leaderboardData = [
-     ...MOCK_FRIENDS,
      { id: 'me', name: '我 (你)', avatar: '', xp: currentXP, tierId: currentTier.id, isMe: true }
   ].sort((a, b) => (b.xp || 0) - (a.xp || 0));
 
@@ -147,6 +147,16 @@ export const LeagueModal: React.FC<LeagueModalProps> = ({ currentXP, onClose }) 
            ) : (
               // --- FRIENDS LEADERBOARD VIEW ---
               <div className="space-y-3 pt-2">
+                 {leaderboardData.length === 1 ? (
+                    <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-300">
+                            <Users size={24} />
+                        </div>
+                        <p className="text-slate-400 text-sm font-bold">暂无好友</p>
+                        <p className="text-xs text-slate-300 mt-1">去社区结识新伙伴吧！</p>
+                    </div>
+                 ) : null}
+
                  {leaderboardData.map((user, idx) => {
                     const tier = TIER_SYSTEM.find(t => t.id === user.tierId) || TIER_SYSTEM[0];
                     const isTop3 = idx < 3;

@@ -40,8 +40,22 @@ export const OctoAvatar: React.FC<OctoAvatarProps> = ({ config, size = 100, clas
         )}
         {bgEffect === 'stars' && (
            <g>
-              <path d="M40 50 L42 55 L47 55 L43 58 L45 63 L40 60 L35 63 L37 58 L33 55 L38 55 Z" fill="#FFD700" opacity="0.8"/>
-              <path d="M160 160 L162 165 L167 165 L163 168 L165 173 L160 170 L155 173 L157 168 L153 165 L158 165 Z" fill="#FFD700" opacity="0.8"/>
+              {/* Deep Night Sky Circle Backdrop */}
+              <circle cx="100" cy="120" r="85" fill="#1e1b4b" /> {/* Dark Indigo */}
+              
+              {/* Scattered Stars */}
+              <circle cx="40" cy="60" r="2" fill="white" opacity="0.8" />
+              <circle cx="160" cy="70" r="2" fill="white" opacity="0.6" />
+              <circle cx="30" cy="130" r="1.5" fill="white" opacity="0.7" />
+              <circle cx="175" cy="120" r="2" fill="white" opacity="0.8" />
+              <circle cx="100" cy="45" r="1.5" fill="white" opacity="0.5" />
+              <circle cx="80" cy="180" r="1" fill="white" opacity="0.6" />
+              <circle cx="130" cy="190" r="1.5" fill="white" opacity="0.7" />
+
+              {/* Larger Gold Stars */}
+              <path d="M40 80 L42 85 L47 85 L43 88 L45 93 L40 90 L35 93 L37 88 L33 85 L38 85 Z" fill="#FFD700" />
+              <path d="M160 100 L162 105 L167 105 L163 108 L165 113 L160 110 L155 113 L157 108 L153 105 L158 105 Z" fill="#FFD700" />
+              <path d="M120 170 L121 173 L124 173 L122 175 L123 178 L120 176 L117 178 L118 175 L116 173 L119 173 Z" fill="#FFD700" />
            </g>
         )}
 
@@ -63,6 +77,8 @@ export const OctoAvatar: React.FC<OctoAvatarProps> = ({ config, size = 100, clas
         <mask id="bodyMask">
            <ellipse cx="100" cy="120" rx="60" ry="50" fill="white" />
         </mask>
+        
+        {/* Subtle Patterns (Spots/Stripes) */}
         <g mask="url(#bodyMask)" opacity="0.3" fill="white">
            {pattern === 'spots' && (
               <>
@@ -79,11 +95,19 @@ export const OctoAvatar: React.FC<OctoAvatarProps> = ({ config, size = 100, clas
                  <path d="M40 140 Q 100 160 160 140" stroke="white" strokeWidth="8" fill="none" />
               </>
            )}
+        </g>
+
+        {/* Vivid Patterns (Sparkles) - Outside of opacity group for brightness */}
+        <g mask="url(#bodyMask)">
            {pattern === 'sparkles' && (
               <>
-                 <path d="M70 150 L72 155 L77 155 L73 158 L75 163 L70 160 L65 163 L67 158 L63 155 L68 155 Z" />
-                 <path d="M130 140 L132 145 L137 145 L133 148 L135 153 L130 150 L125 153 L127 148 L123 145 L128 145 Z" />
-                 <path d="M100 90 L102 95 L107 95 L103 98 L105 103 L100 100 L95 103 L97 98 L93 95 L98 95 Z" />
+                 <path d="M70 150 L72 155 L77 155 L73 158 L75 163 L70 160 L65 163 L67 158 L63 155 L68 155 Z" fill="#FDE047" stroke="#F59E0B" strokeWidth="1" />
+                 <path d="M130 140 L132 145 L137 145 L133 148 L135 153 L130 150 L125 153 L127 148 L123 145 L128 145 Z" fill="#FDE047" stroke="#F59E0B" strokeWidth="1" />
+                 <path d="M100 90 L102 95 L107 95 L103 98 L105 103 L100 100 L95 103 L97 98 L93 95 L98 95 Z" fill="#FDE047" stroke="#F59E0B" strokeWidth="1" />
+                 <circle cx="90" cy="130" r="2" fill="white" />
+                 <circle cx="110" cy="150" r="2" fill="white" />
+                 <circle cx="60" cy="130" r="1.5" fill="#FDE047" />
+                 <circle cx="140" cy="130" r="1.5" fill="#FDE047" />
               </>
            )}
         </g>

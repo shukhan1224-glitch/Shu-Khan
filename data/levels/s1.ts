@@ -29,8 +29,7 @@ export const S1_LEVELS: Level[] = [
     phases: [
       { id: 'p1', title: '创造', difficulty: 'normal', story: { title: '无中生有', content: '化学家就像魔法师，能创造出自然界原本不存在的物质，比如塑料、药物和合金。', emoji: '🧙‍♂️', mood: 'magic' }, questions: [{ id: 'q1', type: 'mcq', text: '化学是一门__的科学？', options: ['实用且创造性', '纯理论'], correctIndex: 0, explanation: '创造新物质。' }] },
       { id: 'p2', title: '桥梁', difficulty: 'normal', story: { title: '十字路口', content: '物理、生物、地质...所有科学都在化学这里交汇。想要理解生命（生物）或物质（物理），都得懂化学！', emoji: '🌉', mood: 'smart' }, questions: [{ id: 'q2', type: 'mcq', text: '化学常被称为什么科学？', options: ['中心科学', '边缘科学'], correctIndex: 0, explanation: 'Central Science。' }] },
-      { id: 'p3', title: '贡献', difficulty: 'normal', story: { title: '改变世界', content: '从合成氨（化肥）养活几十亿人，到锂电池驱动手机，化学彻底改变了人类社会。', emoji: '🌍', mood: 'happy' }, questions: [{ id: 'q3', type: 'mcq', text: '合成氨技术主要解决了什么问题？', options: ['粮食问题', '能源问题'], correctIndex: 0, explanation: '制造化肥。' }] },
-      { id: 'p4', title: '物质', difficulty: 'normal', story: { title: '万物皆化学', content: 'Octo 的储藏室里有纯净的魔法元素（纯净物），也有混合的汤药（混合物）。化学研究物质的组成、结构和性质。', emoji: '🧹', mood: 'curious' }, questions: [{ id: 'q4', type: 'mcq', text: '空气属于？', options: ['混合物', '纯净物'], correctIndex: 0, explanation: '由氮气氧气等组成。' }] }
+      { id: 'p3', title: '贡献', difficulty: 'normal', story: { title: '改变世界', content: '从合成氨（化肥）养活几十亿人，到锂电池驱动手机，化学彻底改变了人类社会。', emoji: '🌍', mood: 'happy' }, questions: [{ id: 'q3', type: 'mcq', text: '合成氨技术主要解决了什么问题？', options: ['粮食问题', '能源问题'], correctIndex: 0, explanation: '制造化肥。' }] }
     ] 
   },
 
