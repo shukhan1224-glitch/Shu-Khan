@@ -164,6 +164,7 @@ export interface SocialPost {
   timestamp: string;
   xpReward?: number; 
   solved?: boolean;
+  authorId?: string; // NEW: To link to follow system
 }
 
 export interface Tier {
@@ -187,6 +188,7 @@ export interface User {
   avatarConfig: AvatarConfig;
   levels: Level[]; 
   mistakes: Mistake[];
+  following: string[]; // NEW: List of User IDs this user follows
 }
 
 export interface AuthResponse {

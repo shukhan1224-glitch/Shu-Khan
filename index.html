@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
   <head>
@@ -9,10 +10,25 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Zcool+KuaiLe&family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+      /* --- Anti-FOUC Fix (防止无样式闪烁) --- */
+      html {
+        visibility: hidden; /* 默认隐藏整个页面 */
+        opacity: 0;
+      }
+      
+      /* 当 JS 加载完成后，添加此 class 显示页面 */
+      html.loaded {
+        visibility: visible;
+        opacity: 1;
+        transition: opacity 0.4s ease-in-out; /* 平滑淡入效果 */
+      }
+
       body {
         font-family: 'Nunito', 'Noto Sans SC', sans-serif;
         background-color: #FDFCF8;
         -webkit-font-smoothing: antialiased;
+        margin: 0;
+        height: 100vh;
       }
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: transparent; }
@@ -86,5 +102,19 @@
 }
 </script>
 </head>
-<body><div id="root"></div></body>
+<body>
+  <div id="root"></div>
+  <script>
+    // FOUC Prevention Script
+    // 等待所有资源（包括 Tailwind CSS 脚本）加载完成后，再显示页面
+    window.addEventListener('load', function() {
+      document.documentElement.classList.add('loaded');
+    });
+    
+    // 安全回退：如果 1秒后 load 事件还没触发（比如网络极慢），强制显示，避免用户看到白屏太久
+    setTimeout(function() {
+      document.documentElement.classList.add('loaded');
+    }, 1000);
+  </script>
+</body>
 </html>

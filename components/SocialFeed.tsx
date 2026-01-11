@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { motion as m, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Send, Plus, HelpCircle, User, Zap, Image as ImageIcon, X, ShieldCheck, Check, Ban, Clock, AlertCircle, Sparkles } from 'lucide-react';
+import { Heart, MessageCircle, Send, Plus, HelpCircle, User, Zap, Image as ImageIcon, X, ShieldCheck, Check, Ban, Clock, AlertCircle, Sparkles, UserPlus, UserCheck } from 'lucide-react';
 import { SocialPost, Comment, AvatarConfig } from '../types';
 import { MOCK_POSTS } from '../constants';
 import { OctoAvatar } from './OctoAvatar';
@@ -13,12 +13,14 @@ interface SocialFeedProps {
   currentUserAvatarConfig: AvatarConfig;
   currentUserName: string;
   isAdmin?: boolean;
-  onUnlockAvatar?: (config: Partial<AvatarConfig>) => void; // New prop for unlocking rewards
+  onUnlockAvatar?: (config: Partial<AvatarConfig>) => void;
+  following?: string[];
+  onToggleFollow?: (id: string) => void;
 }
 
 type Tab = 'explore' | 'moderation';
 
-export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAvatarConfig, currentUserName, isAdmin, onUnlockAvatar }) => {
+export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAvatarConfig, currentUserName, isAdmin, onUnlockAvatar, following = [], onToggleFollow }) => {
   const [activeTab, setActiveTab] = useState<Tab>('explore');
   const [posts, setPosts] = useState<SocialPost[]>(MOCK_POSTS);
   const [newPostContent, setNewPostContent] = useState('');
@@ -174,14 +176,14 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
   const renderAvatar = (src: string) => {
       if (src === 'custom-octo') {
           return (
-             <div className="w-10 h-10 rounded-full bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
+             <div className="w-10 h-10 rounded-full bg-white border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
                 <div className="scale-[0.5] mt-1">
                    <OctoAvatar config={currentUserAvatarConfig} size={40} />
                 </div>
              </div>
           )
       }
-      return <img src={src} alt="Avatar" className="w-10 h-10 rounded-full bg-slate-100" />
+      return <img src={src} alt="Avatar" className="w-10 h-10 rounded-full bg-slate-100 object-cover shrink-0" />
   };
 
   return (
@@ -220,7 +222,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
         {activeTab === 'explore' && (
            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 shadow-soft border border-white/60">
               <div className="flex gap-3 mb-3">
-                 <div className="w-10 h-10 rounded-full bg-white border border-slate-100 overflow-hidden flex items-center justify-center">
+                 <div className="w-10 h-10 rounded-full bg-white border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
                     <div className="scale-[0.5] mt-1">
                        <OctoAvatar config={currentUserAvatarConfig} size={40} />
                     </div>
@@ -296,7 +298,11 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
              </div>
           )}
           
-          {displayedPosts.map((post) => (
+          {displayedPosts.map((post) => {
+            const isFollowing = post.authorId && following.includes(post.authorId);
+            const isMe = post.author === effectiveUserName;
+
+            return (
             <motion.div
               key={post.id}
               initial={{ opacity: 0, y: 20 }}
@@ -308,20 +314,33 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
             >
               <div className="flex items-center gap-3 mb-4">
                 {renderAvatar(post.avatar)}
-                <div className="flex-1">
-                   <h3 className="font-bold text-slate-700 text-sm flex items-center gap-2">
-                      {post.author}
-                      {post.status === 'pending' && (
-                         <span className="bg-orange-100 text-orange-600 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <Clock size={10} /> 审核中
-                         </span>
-                      )}
-                   </h3>
+                <div className="flex-1 min-w-0">
+                   <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-slate-700 text-sm flex items-center gap-2">
+                            {post.author}
+                            {post.status === 'pending' && (
+                                <span className="bg-orange-100 text-orange-600 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <Clock size={10} /> 审核中
+                                </span>
+                            )}
+                        </h3>
+                        {/* FOLLOW BUTTON (Only if valid ID and not me) */}
+                        {post.authorId && !isMe && onToggleFollow && (
+                            <button 
+                                onClick={() => onToggleFollow(post.authorId!)}
+                                className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 transition-all
+                                    ${isFollowing ? 'bg-slate-100 text-slate-400' : 'bg-mint text-slate-800 hover:bg-mint-dark'}
+                                `}
+                            >
+                                {isFollowing ? <><UserCheck size={10} /> 已关注</> : <><Plus size={10} /> 关注</>}
+                            </button>
+                        )}
+                   </div>
                    <span className="text-xs text-slate-400">{post.timestamp}</span>
                 </div>
                 
                 {post.type === 'question' && (
-                   <span className="bg-apricot/20 text-apricot-dark text-[10px] font-black px-2 py-1 rounded-full flex items-center gap-1">
+                   <span className="bg-apricot/20 text-apricot-dark text-[10px] font-black px-2 py-1 rounded-full flex items-center gap-1 shrink-0">
                       <HelpCircle size={12} /> 悬赏 {post.xpReward} XP
                    </span>
                 )}
@@ -417,7 +436,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ onEarnXP, currentUserAva
               )}
 
             </motion.div>
-          ))}
+          )})}
         </AnimatePresence>
 
         {/* Reward Toast Notification */}

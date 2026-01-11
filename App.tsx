@@ -81,6 +81,7 @@ const App: React.FC = () => {
   const [userStats, setUserStats] = useState<UserStats>(DEFAULT_STATS);
   const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(DEFAULT_AVATAR);
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
+  const [following, setFollowing] = useState<string[]>([]); // New State
 
   // Timer Ref for Inactivity
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,6 +107,7 @@ const App: React.FC = () => {
     setCurrentUser(user);
     setUserStats(user.stats || DEFAULT_STATS);
     setAvatarConfig(user.avatarConfig || DEFAULT_AVATAR);
+    setFollowing(user.following || []); // Load following
     
     // --- LEVEL MERGE LOGIC ---
     // Ensure we use the latest code structure (INITIAL_LEVELS) for titles/content,
@@ -144,14 +146,15 @@ const App: React.FC = () => {
             stats: userStats,
             avatarConfig: avatarConfig,
             levels: levels,
-            mistakes: mistakes
+            mistakes: mistakes,
+            following: following
           };
           await authService.saveProgress(updatedUser);
           setTimeout(() => setIsSyncing(false), 800);
        };
        sync();
     }
-  }, [userStats, avatarConfig, levels, mistakes]);
+  }, [userStats, avatarConfig, levels, mistakes, following]);
 
   // --- AUTO LOGOUT LOGIC ---
   const handleLogout = async (isAuto: boolean = false) => {
@@ -165,6 +168,7 @@ const App: React.FC = () => {
     setAvatarConfig(DEFAULT_AVATAR);
     setLevels(INITIAL_LEVELS);
     setMistakes([]);
+    setFollowing([]);
     setShowWelcome(false);
     
     if (isAuto) {
@@ -203,6 +207,14 @@ const App: React.FC = () => {
 
   const handleLogin = (user: User) => {
     loadUserData(user, true);
+  };
+
+  const handleToggleFollow = (targetId: string) => {
+      if (following.includes(targetId)) {
+          setFollowing(prev => prev.filter(id => id !== targetId));
+      } else {
+          setFollowing(prev => [...prev, targetId]);
+      }
   };
 
   const handleLevelClick = async (level: Level, phaseIndex: number = 0) => {
@@ -404,9 +416,22 @@ const App: React.FC = () => {
                onUnlockAvatar={(newConfig) => {
                   setAvatarConfig(prev => ({ ...prev, ...newConfig }));
                }}
+               following={following}
+               onToggleFollow={handleToggleFollow}
             />
         )}
-        {currentView === View.PROFILE && <Profile stats={userStats} avatarConfig={avatarConfig} onUpdateAvatar={setAvatarConfig} onLogout={() => handleLogout(false)} onUpdatePlan={p => setUserStats(s => ({...s, studyPlan: p}))} userEmail={currentUser.email} />}
+        {currentView === View.PROFILE && (
+            <Profile 
+                stats={userStats} 
+                avatarConfig={avatarConfig} 
+                onUpdateAvatar={setAvatarConfig} 
+                onLogout={() => handleLogout(false)} 
+                onUpdatePlan={p => setUserStats(s => ({...s, studyPlan: p}))} 
+                userEmail={currentUser.email}
+                following={following}
+                onToggleFollow={handleToggleFollow}
+            />
+        )}
       </main>
 
       {isLoadingLevel && (

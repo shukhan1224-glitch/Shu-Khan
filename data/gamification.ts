@@ -13,18 +13,26 @@ export const TIER_SYSTEM: Tier[] = [
   { id: 't8', name: '元素之神', minXP: 20000, maxXP: 999999, color: 'text-yellow-600', bgGradient: 'from-yellow-100 to-yellow-200', icon: '👑', description: '化学界的传说。' },
 ];
 
-export const MOCK_FRIENDS = [
-  { id: 'f1', name: 'Alice', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Alice', weeklyXP: 3250, xp: 7250, tierId: 't6' },
-  { id: 'f2', name: 'Dr. Zinc', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Zinc', weeklyXP: 2890, xp: 3890, tierId: 't5' },
-  { id: 'f3', name: 'Felix', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Felix', weeklyXP: 1540, xp: 1540, tierId: 't4' },
-  { id: 'f4', name: 'Bob', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Bob', weeklyXP: 920, xp: 920, tierId: 't3' },
-  { id: 'f5', name: 'Annie', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Annie', weeklyXP: 450, xp: 450, tierId: 't2' },
+export const MOCK_LEAGUE_USERS = [
+  { id: 'official-001', name: 'ChemStep Official', avatar: 'https://api.dicebear.com/9.x/adventurer/svg?seed=OctoMascot&backgroundColor=b6e3f4', xp: 99999, tierId: 't8' },
+  { id: 'u101', name: 'Alice', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Alice', xp: 7250, tierId: 't6' },
+  { id: 'u102', name: 'Dr. Zinc', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Zinc', xp: 3890, tierId: 't5' },
+  { id: 'u103', name: 'Felix', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Felix', xp: 1540, tierId: 't4' },
+  { id: 'u104', name: 'Bob', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Bob', xp: 920, tierId: 't3' },
+  { id: 'u105', name: 'Annie', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Annie', xp: 450, tierId: 't2' },
+  { id: 'u106', name: 'Tom', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Tom', xp: 120, tierId: 't1' },
+  { id: 'u107', name: 'Marie Curie Fan', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Marie', xp: 18500, tierId: 't7' },
+  { id: 'u108', name: 'Nobel Pro', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Nobel', xp: 2200, tierId: 't4' },
 ];
+
+// Re-export MOCK_LEAGUE_USERS as MOCK_FRIENDS for legacy compatibility if needed
+export const MOCK_FRIENDS = MOCK_LEAGUE_USERS.filter(u => u.id !== 'official-001');
 
 export const MOCK_POSTS: SocialPost[] = [
   {
     id: 'admin-001',
     author: 'ChemStep Official',
+    authorId: 'official-001', 
     avatar: 'https://api.dicebear.com/9.x/adventurer/svg?seed=OctoMascot&backgroundColor=b6e3f4',
     type: 'share',
     status: 'approved',
@@ -33,8 +41,40 @@ export const MOCK_POSTS: SocialPost[] = [
     likes: 1208,
     isLiked: false,
     timestamp: '置顶',
-    comments: [], // No fake comments as requested
+    comments: [],
     xpReward: 0,
+    solved: false
+  },
+  {
+    id: 'post-101',
+    author: 'Alice',
+    authorId: 'u101',
+    avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Alice',
+    type: 'share',
+    status: 'approved',
+    content: '今天终于搞懂了原电池的原理！🔋\n\n口诀分享给大家：\n"负氧失，正还基"\n(负极氧化失电子，正极还原得电子)\n\n是不是好记多了？😄',
+    likes: 45,
+    isLiked: false,
+    timestamp: '2小时前',
+    comments: [
+       { id: 'c1', author: 'Bob', avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Bob', content: '太强了！我总是记混', timestamp: '1小时前' }
+    ],
+    xpReward: 0,
+    solved: false
+  },
+  {
+    id: 'post-102',
+    author: 'Dr. Zinc',
+    authorId: 'u102',
+    avatar: 'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Zinc',
+    type: 'question',
+    status: 'approved',
+    content: '【求助】为什么浓硝酸和铜反应生成的是 NO2，而稀硝酸生成的是 NO？\n\n这跟氧化性强弱有关系吗？🤔',
+    likes: 12,
+    isLiked: false,
+    timestamp: '5小时前',
+    comments: [],
+    xpReward: 50,
     solved: false
   }
 ];

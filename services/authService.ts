@@ -33,7 +33,8 @@ const createDefaultUser = (id: string, displayName: string, role: 'student' | 'a
       bgEffect: 'none' 
     },
     levels: INITIAL_LEVELS.map(l => finalRole === 'admin' ? { ...l, locked: false } : l),
-    mistakes: []
+    mistakes: [],
+    following: [] // Default empty following list
   };
 };
 
@@ -227,9 +228,13 @@ export const authService = {
                 user.email = profileData.email; 
                 user.role = role; // Apply override
                 
+                // Ensure following exists
+                if (!user.following) user.following = [];
+
                 // If forced admin, ensure XP/Levels are correct
                 if (role === 'admin' && user.stats.xp < 9999) {
-                    user = createDefaultUser(authData.user.id, profileData.username, 'admin', profileData.email);
+                    const temp = createDefaultUser(authData.user.id, profileData.username, 'admin', profileData.email);
+                    user = { ...temp, following: user.following || [] }; // Keep following
                 }
             } else {
                 // Fallback reconstruction
@@ -292,9 +297,11 @@ export const authService = {
             if (data) {
                 if (data.game_data) {
                     const u = { ...data.game_data, id: session.user.id, role: role } as User;
+                    if (!u.following) u.following = []; // Ensure property exists
                     // Ensure Admin stats persist if role is forced
                     if (role === 'admin' && u.stats.xp < 9999) {
-                         return createDefaultUser(session.user.id, data.username, 'admin', email);
+                         const temp = createDefaultUser(session.user.id, data.username, 'admin', email);
+                         return { ...temp, following: u.following };
                     }
                     return u;
                 }

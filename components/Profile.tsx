@@ -11,6 +11,7 @@ import { ElementCollection } from './ElementCollection';
 import { authService } from '../services/authService';
 import { ElementVisual } from './ElementVisual';
 import { generateElementImage } from '../services/geminiService';
+import { ElementDropModal } from './ElementDropModal';
 
 const motion = m as any;
 
@@ -21,6 +22,8 @@ interface ProfileProps {
   onLogout: () => void;
   onUpdatePlan?: (plan: StudyPlan) => void;
   userEmail?: string;
+  following?: string[]; // NEW
+  onToggleFollow?: (id: string) => void; // NEW
 }
 
 const ProfessionIcons: Record<string, React.ReactNode> = {
@@ -33,7 +36,7 @@ const ProfessionIcons: Record<string, React.ReactNode> = {
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
-export const Profile: React.FC<ProfileProps> = ({ stats, avatarConfig, onUpdateAvatar, onLogout, onUpdatePlan, userEmail }) => {
+export const Profile: React.FC<ProfileProps> = ({ stats, avatarConfig, onUpdateAvatar, onLogout, onUpdatePlan, userEmail, following, onToggleFollow }) => {
   const currentTier = TIER_SYSTEM.find(t => stats.xp >= t.minXP && stats.xp <= t.maxXP) || TIER_SYSTEM[TIER_SYSTEM.length - 1];
   
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
@@ -249,9 +252,8 @@ export const Profile: React.FC<ProfileProps> = ({ stats, avatarConfig, onUpdateA
 
       <AnimatePresence>
         {selectedElement && (
-           <ElementDetailModal 
-              symbol={selectedElement} 
-              data={getElementData(selectedElement)}
+           <ElementDropModal 
+              element={getElementData(selectedElement)}
               onClose={() => setSelectedElement(null)} 
            />
         )}
@@ -303,7 +305,9 @@ export const Profile: React.FC<ProfileProps> = ({ stats, avatarConfig, onUpdateA
          {showLeague && (
             <LeagueModal 
                currentXP={stats.xp} 
-               onClose={() => setShowLeague(false)} 
+               onClose={() => setShowLeague(false)}
+               following={following}
+               onToggleFollow={onToggleFollow}
             />
          )}
       </AnimatePresence>
@@ -312,7 +316,6 @@ export const Profile: React.FC<ProfileProps> = ({ stats, avatarConfig, onUpdateA
 };
 
 const LinkEmailModal: React.FC<{ onClose: () => void, isVirtual: boolean }> = ({ onClose, isVirtual }) => {
-    // ... (rest of the component remains same)
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
@@ -396,7 +399,6 @@ const LinkEmailModal: React.FC<{ onClose: () => void, isVirtual: boolean }> = ({
 };
 
 const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    // ... (rest of the component remains same)
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
     const [message, setMessage] = useState('');
@@ -486,7 +488,6 @@ const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
 };
 
 const PlanEditorModal: React.FC<{ initialPlan: StudyPlan, onSave: (p: StudyPlan) => void, onClose: () => void }> = ({ initialPlan, onSave, onClose }) => {
-   // ... (rest of the component remains same)
    const [plan, setPlan] = useState<StudyPlan>({ ...(initialPlan || { days: [1,3,5], time: '20:00' }), xpTarget: 300 });
 
    const toggleDay = (dayIdx: number) => {
@@ -517,14 +518,26 @@ const PlanEditorModal: React.FC<{ initialPlan: StudyPlan, onSave: (p: StudyPlan)
                         <button
                            key={idx}
                            onClick={() => toggleDay(idx)}
-                           className={`w-9 h-9 rounded-xl text-xs font-bold transition-all border-2
-                              ${plan.days.includes(idx) ? 'bg-mint border-mint text-slate-800 shadow-md' : 'bg-white border-slate-100 text-slate-300'}
+                           className={`w-8 h-8 rounded-full text-xs font-black flex items-center justify-center transition-all
+                              ${plan.days.includes(idx) ? 'bg-mint text-slate-800 shadow-md scale-110' : 'bg-slate-100 text-slate-400'}
                            `}
                         >
-                           {day.replace('周','')}
+                           {day.replace('周', '')}
                         </button>
                      ))}
                   </div>
+               </div>
+
+               <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">每日目标 XP</label>
+                  <input 
+                     type="range" 
+                     min="50" max="1000" step="50"
+                     value={plan.xpTarget}
+                     onChange={(e) => setPlan({...plan, xpTarget: parseInt(e.target.value)})}
+                     className="w-full accent-mint h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="text-center mt-2 font-black text-2xl text-slate-700">{plan.xpTarget} XP</div>
                </div>
 
                <div>
@@ -533,29 +546,13 @@ const PlanEditorModal: React.FC<{ initialPlan: StudyPlan, onSave: (p: StudyPlan)
                      type="time" 
                      value={plan.time}
                      onChange={(e) => setPlan({...plan, time: e.target.value})}
-                     className="w-full bg-white border-2 border-slate-100 rounded-2xl px-4 py-3 text-lg font-bold text-slate-700 outline-none focus:border-mint"
+                     className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 outline-none focus:border-mint transition-all font-bold text-slate-700"
                   />
-               </div>
-
-               <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">每日目标 (系统推荐)</label>
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center gap-4">
-                     <div className="w-12 h-12 bg-mint/20 rounded-xl flex items-center justify-center text-mint-dark shrink-0">
-                        <Target size={24} />
-                     </div>
-                     <div>
-                        <div className="text-xl font-black text-slate-700">300 XP</div>
-                        <div className="text-xs text-slate-400 font-bold">约等于完成 1 个完整关卡</div>
-                     </div>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
-                     * 根据当前的地图难度，系统建议每日完成至少一个关卡以保持最佳学习进度。
-                  </p>
                </div>
 
                <button 
                   onClick={() => onSave(plan)}
-                  className="w-full bg-slate-800 text-white py-3.5 rounded-2xl font-bold shadow-lg mt-4 active:scale-95 transition-transform"
+                  className="w-full bg-slate-800 text-white py-3.5 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform"
                >
                   保存计划
                </button>
@@ -563,139 +560,4 @@ const PlanEditorModal: React.FC<{ initialPlan: StudyPlan, onSave: (p: StudyPlan)
          </motion.div>
       </div>
    );
-};
-
-const ElementDetailModal: React.FC<{ symbol: string; data: ElementDetail; onClose: () => void }> = ({ symbol, data, onClose }) => {
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  // Load cached image on mount
-  useEffect(() => {
-     const cached = localStorage.getItem(`element_img_${symbol}`);
-     if (cached) {
-        setGeneratedImage(cached);
-     } else {
-        setGeneratedImage(null);
-     }
-  }, [symbol]);
-
-  const handleGenerate = async () => {
-     if (isGenerating) return;
-     setIsGenerating(true);
-     
-     try {
-        const base64 = await generateElementImage(data.symbol, data.name, data.category, data.funFact);
-        if (base64) {
-           setGeneratedImage(base64);
-           try {
-              localStorage.setItem(`element_img_${symbol}`, base64);
-           } catch (e) {
-              console.warn("Local storage full, cannot cache image");
-           }
-        } else {
-           alert("生成失败，请稍后再试");
-        }
-     } catch (e) {
-        console.error(e);
-     } finally {
-        setIsGenerating(false);
-     }
-  };
-
-  const activeImage = data.image || generatedImage;
-
-  return (
-    <motion.div 
-       initial={{ opacity: 0 }}
-       animate={{ opacity: 1 }}
-       exit={{ opacity: 0 }}
-       className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-6"
-       onClick={onClose}
-    >
-       <motion.div 
-         initial={{ scale: 0.8, y: 50, rotateX: 10 }}
-         animate={{ scale: 1, y: 0, rotateX: 0 }}
-         exit={{ scale: 0.8, y: 50, opacity: 0 }}
-         onClick={(e) => e.stopPropagation()}
-         className="w-full max-w-sm bg-cream rounded-[2.5rem] overflow-hidden shadow-2xl relative"
-       >
-         <button 
-           onClick={onClose}
-           className="absolute top-4 right-4 w-10 h-10 bg-black/10 backdrop-blur-sm rounded-full flex items-center justify-center text-white z-20 hover:bg-black/20"
-         >
-            <X size={20} />
-         </button>
-
-         <div className={`h-72 relative w-full bg-gradient-to-br ${data.visual.gradient} flex items-center justify-center overflow-hidden`}>
-            {/* Show Image if available, or Generated one */}
-            {generatedImage ? (
-               <>
-                  <img src={generatedImage} alt={data.name} className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-               </>
-            ) : data.image ? (
-               <>
-                  <img src={data.image} alt={data.name} className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-90 transition-opacity duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
-               </>
-            ) : (
-               <ElementVisual element={data} className="absolute inset-0 w-full h-full" />
-            )}
-
-            {/* AI Generate Button (Always available if no generated image, allowing override of stock image) */}
-            {!generatedImage && (
-               <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
-                  disabled={isGenerating}
-                  className="absolute top-4 left-4 z-20 bg-white/20 backdrop-blur-md border border-white/40 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-white/30 transition-all shadow-sm"
-               >
-                  {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Paintbrush size={12} />}
-                  {isGenerating ? 'Octo 绘制中...' : '魔法绘制'}
-               </motion.button>
-            )}
-
-            <div className="absolute bottom-4 left-6 text-white/90 z-10 drop-shadow-md">
-               <p className="text-xs font-bold uppercase tracking-widest opacity-80">Atomic No.</p>
-               <p className="text-4xl font-black leading-none">{data.atomicNumber}</p>
-            </div>
-            
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-               {!activeImage && <span className="text-[120px] font-black text-white opacity-20">{data.symbol}</span>}
-            </div>
-         </div>
-
-         <div className="p-6 relative bg-white">
-            <div className="flex justify-between items-center mb-4">
-               <div>
-                  <h2 className="text-3xl font-extrabold text-slate-800">{data.name}</h2>
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-full">
-                     {data.category}
-                  </span>
-               </div>
-               <button className="p-2 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 transition-colors">
-                  <Share2 size={20} />
-               </button>
-            </div>
-
-            <div className="space-y-4">
-               <div className="bg-apricot/20 p-4 rounded-2xl border border-apricot/50">
-                  <h3 className="flex items-center gap-2 font-bold text-apricot-dark text-sm mb-1">
-                     <Sparkles size={14} fill="currentColor" /> Fun Fact
-                  </h3>
-                  <p className="text-slate-700 text-sm font-medium leading-relaxed">
-                     {data.funFact}
-                  </p>
-               </div>
-
-               <p className="text-slate-500 text-sm leading-relaxed">
-                  {data.description}
-               </p>
-            </div>
-         </div>
-         
-       </motion.div>
-    </motion.div>
-  );
 };
